@@ -2,6 +2,7 @@
 # /// script
 # dependencies = [
 #   "bs4",
+#   "eviltransform",
 #   "httpx",
 #   "googlemaps",
 #   "PyICU",
@@ -12,6 +13,7 @@ import asyncio
 from bs4 import BeautifulSoup
 import dataclasses
 import datetime
+import eviltransform
 import html
 import httpx
 import googlemaps
@@ -119,8 +121,9 @@ class Event:
     venue: str
     address: str | None
     country: str | None
-    canceled: bool
     lat_lng: tuple[float, float] | None
+    canceled: bool
+    sources: typing.List[str] | None
 
     def geocode_lat_lng(self, gmaps: googlemaps.Client):
         if self.lat_lng is not None:
@@ -134,17 +137,23 @@ class Event:
 
         if predictions:
             prediction, *_ = predictions
-            st = prediction["structured_formatting"]
-            if "secondary_text" in st:
-                self.address = st["secondary_text"]
+
+            if self.address is None:
+                st = prediction["structured_formatting"]
+                if "secondary_text" in st:
+                    self.address = st["secondary_text"]
 
             place = gmaps.place(
                 prediction["place_id"],
                 session_token=session_token,
                 fields=["geometry/location"],
             )
+
             l = place["result"]["geometry"]["location"]
             self.lat_lng = (l["lat"], l["lng"])
+            if self.country == "CN":
+                lat, lng = self.lat_lng
+                self.lat_lng = eviltransform.gcj2wgs(lat, lng)
 
     def materialize_entry(self, gmaps: googlemaps.Client):
         self.geocode_lat_lng(gmaps)
@@ -159,7 +168,7 @@ class Event:
             **({"country": self.country} if self.country is not None else {}),
             **({"latLng": self.lat_lng} if self.lat_lng is not None else {}),
             **({"canceled": True} if self.canceled else {}),
-            "sources": ["fancons.com"],
+            **({"sources": self.sources} if self.sources is not None else {}),
         }
 
 
@@ -219,6 +228,7 @@ async def fetch_events():
                     country=country,
                     lat_lng=lat_lng,
                     canceled=canceled,
+                    sources=["fancons.com"],
                 )
 
             except Exception as e:
