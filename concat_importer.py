@@ -12,6 +12,7 @@ import json
 import logging
 import googlemaps
 import httpx
+import re
 import os
 import uuid
 import whenever
@@ -29,9 +30,15 @@ def main():
     with open(fn) as f:
         series = json.load(f)
 
+    venue_details = {
+        event["venue"]: {k: v for k, v in event.items() if k in {"address", "latLng"}}
+        for event in series["events"]
+    }
+
     resp = httpx.get(f"{concat_url}/api/config")
     resp.raise_for_status()
     config = resp.json()
+
     for convention in config["conventions"]:
         start_date = whenever.OffsetDateTime.parse_common_iso(
             convention["startAt"]
@@ -53,37 +60,47 @@ def main():
                 continue
 
         venue = convention["venue"]
+
         country = config["organization"]["country"]
 
-        session_token = str(uuid.uuid4())
-        predictions = gmaps.places_autocomplete(
-            f"{venue}, {country}", session_token=session_token
-        )
-
-        venue = convention["venue"]
-        address = None
-
-        if len(predictions) == 0:
+        if venue not in venue_details:
+            logging.info(f"geocoding required for: {venue}")
+            address = None
             lat_lng = None
-        else:
-            prediction, *_ = predictions
-            st = prediction["structured_formatting"]
-            if "secondary_text" in st:
-                address = st["secondary_text"]
 
-            place = gmaps.place(
-                prediction["place_id"],
-                session_token=session_token,
-                fields=["geometry/location"],
+            session_token = str(uuid.uuid4())
+
+            predictions = gmaps.places_autocomplete(
+                f"{venue}, {country}", session_token=session_token
             )
-            l = place["result"]["geometry"]["location"]
-            lat_lng = [l["lat"], l["lng"]]
 
-        url = concat_url
+            if predictions:
+                prediction, *_ = predictions
+                st = prediction["structured_formatting"]
+                if "secondary_text" in st:
+                    address = st["secondary_text"]
+
+                place = gmaps.place(
+                    prediction["place_id"],
+                    session_token=session_token,
+                    fields=["geometry/location"],
+                )
+                l = place["result"]["geometry"]["location"]
+                lat_lng = [l["lat"], l["lng"]]
+
+            venue_details[venue] = {
+                "address": address,
+                "latLng": lat_lng,
+            }
+
+        details = venue_details[venue]
+        address = details["address"]
+        lat_lng = details["latLng"]
+
         if previous_event is not None:
             url = previous_event["url"]
-        elif url.startswith("https://reg."):
-            url = f"https://{url.removeprefix('https://reg.')}"
+        else:
+            url = re.sub(r"^https://reg.", "https://", concat_url)
 
         event = {
             "id": id,
