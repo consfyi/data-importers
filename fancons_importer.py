@@ -15,6 +15,7 @@ import datetime
 import html
 import httpx
 import googlemaps
+import uuid
 import json
 import icu
 import logging
@@ -115,8 +116,9 @@ class Event:
     url: str
     start_date: datetime.date
     end_date: datetime.date
-    location: typing.List[str]
-    country: str
+    venue: str
+    address: str | None
+    country: str | None
     canceled: bool
     lat_lng: tuple[float, float] | None
 
@@ -124,26 +126,40 @@ class Event:
         if self.lat_lng is not None:
             return
 
-        geocode = gmaps.geocode(", ".join(self.location))
-        if not geocode:
-            return
+        session_token = str(uuid.uuid4())
 
-        location = geocode[0]["geometry"]["location"]
-        self.lat_lng = (location["lat"], location["lng"])
+        predictions = gmaps.places_autocomplete(
+            ", ".join(part for part in [self.venue, self.address] if part is not None)
+        )
+
+        if predictions:
+            prediction, *_ = predictions
+            st = prediction["structured_formatting"]
+            if "secondary_text" in st:
+                self.address = st["secondary_text"]
+
+            place = gmaps.place(
+                prediction["place_id"],
+                session_token=session_token,
+                fields=["geometry/location"],
+            )
+            l = place["result"]["geometry"]["location"]
+            self.lat_lng = (l["lat"], l["lng"])
 
     def materialize_entry(self, gmaps: googlemaps.Client):
         self.geocode_lat_lng(gmaps)
         return {
             "id": self.id,
             "name": self.name,
+            "url": self.url,
             "startDate": self.start_date.isoformat(),
             "endDate": self.end_date.isoformat(),
-            "location": self.location,
-            "country": self.country,
+            "venue": self.venue,
+            **({"address": self.address} if self.address is not None else {}),
+            **({"country": self.country} if self.country is not None else {}),
             **({"latLng": self.lat_lng} if self.lat_lng is not None else {}),
-            "sources": ["fancons.com"],
-            "url": self.url,
             **({"canceled": True} if self.canceled else {}),
+            "sources": ["fancons.com"],
         }
 
 
@@ -164,26 +180,19 @@ async def fetch_events():
                 start_date = datetime.date.fromisoformat(entry["startDate"])
                 end_date = datetime.date.fromisoformat(entry["endDate"])
                 loc = entry["location"]
-                loc_name = loc["name"]
-                address = loc["address"]
-                country_name = loc["address"]["addressCountry"]
+                venue = loc["name"]
+                address_parts = loc["address"]
+                country_name = address_parts["addressCountry"]
                 country = COUNTRIES[country_name]
-                location = [
+                address = ", ".join(
                     part
                     for part in [
-                        loc_name,
-                        ", ".join(
-                            part
-                            for part in [
-                                address.get("addressLocality", ""),
-                                address.get("addressRegion", ""),
-                                country_name,
-                            ]
-                            if part
-                        ),
+                        address_parts.get("addressLocality", ""),
+                        address_parts.get("addressRegion", ""),
+                        country_name,
                     ]
                     if part
-                ]
+                )
                 canceled = entry["eventStatus"] not in {
                     "https://schema.org/EventScheduled",
                     "https://schema.org/EventRescheduled",
@@ -205,7 +214,8 @@ async def fetch_events():
                     url=url,
                     start_date=start_date,
                     end_date=end_date,
-                    location=location,
+                    venue=venue,
+                    address=address,
                     country=country,
                     lat_lng=lat_lng,
                     canceled=canceled,
