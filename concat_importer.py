@@ -1,6 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # dependencies = [
+#   "eviltransform",
 #   "httpx",
 #   "googlemaps",
 #   "whenever",
@@ -10,6 +11,7 @@
 import sys
 import json
 import logging
+import eviltransform
 import googlemaps
 import httpx
 import re
@@ -87,6 +89,9 @@ def main():
                 )
                 l = place["result"]["geometry"]["location"]
                 lat_lng = [l["lat"], l["lng"]]
+                if country == "CN":
+                    lat, lng = lat_lng
+                    lat_lng = eviltransform.gcj2wgs(lat, lng)
 
             venue_details[venue] = {
                 "address": address,

@@ -148,7 +148,6 @@ class Event:
                 session_token=session_token,
                 fields=["geometry/location"],
             )
-
             l = place["result"]["geometry"]["location"]
             self.lat_lng = (l["lat"], l["lng"])
             if self.country == "CN":
