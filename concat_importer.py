@@ -50,17 +50,20 @@ def main():
 
         id = f"{series_id}-{start_date.year}"
 
-        for i, e in enumerate(series["events"]):
+        events = series["events"]
+        for i, e in enumerate(events):
             if whenever.Date.parse_common_iso(e["startDate"]) <= start_date:
                 break
         else:
-            i = len(series["events"])
+            i = len(events)
 
         previous_event = None
-        if i < len(series["events"]):
-            previous_event = series["events"][i]
+        if i < len(events):
+            previous_event = events[i]
             if previous_event["id"] == id:
-                continue
+                if previous_event.get("sources") != ["fancons.com"]:
+                    continue
+                del events[i]
 
         venue = convention["venue"]
 
@@ -120,7 +123,7 @@ def main():
             "latLng": lat_lng,
         }
         logging.info(f"imported: {event}")
-        series["events"].insert(i, {k: v for k, v in event.items() if v is not None})
+        events.insert(i, {k: v for k, v in event.items() if v is not None})
 
     with open(fn, "w") as f:
         json.dump(series, f, indent=2, ensure_ascii=False)
