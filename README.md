@@ -16,6 +16,10 @@ For all cons that support ConCat import, you can add an entry in `import_concat_
 
 This importer will infer the URL field from the registration (changes `https://reg.` to `https://`), so be careful if the heuristic is incorrect.
 
+## `guess_importer.py`
+
+This importer will just guess when the next instance of a con is from previous cons.
+
 ## `regfox_importer.py`
 
 This imports cons that are managed by [RegFox](https://regfox.com) from any RegFox endpoint.

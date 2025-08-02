@@ -61,7 +61,8 @@ def main():
         if i < len(events):
             previous_event = events[i]
             if previous_event["id"] == id:
-                if previous_event.get("sources") != ["fancons.com"]:
+                sources = previous_event.get("sources", [])
+                if sources != ["fancons.com"] and sources != ["guessed"]:
                     continue
                 del events[i]
 
@@ -130,4 +131,5 @@ def main():
         f.write("\n")
 
 
-main()
+if __name__ == "__main__":
+    main()
