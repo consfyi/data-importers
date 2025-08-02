@@ -263,25 +263,37 @@ async def main():
 
         if i < len(series["events"]):
             previous_event = series["events"][i]
-            if previous_event["id"] == event.id:
-                continue
 
             event.url = previous_event["url"]
 
             # Handle numbered cons.
             previous_prefix, previous_suffix = previous_event["name"].rsplit(" ", 1)
+            previous_start_date = datetime.date.fromisoformat(
+                previous_event["startDate"]
+            )
+            previous_end_date = datetime.date.fromisoformat(previous_event["endDate"])
+
+            if (
+                event.start_date.year == previous_start_date.year
+                and event.end_date.year == previous_end_date.year
+            ):
+                continue
+
             try:
                 previous_suffix = int(previous_suffix)
             except:
                 pass
             else:
                 if (
-                    datetime.date.fromisoformat(previous_event["startDate"]).year
-                    != previous_suffix
-                    or datetime.date.fromisoformat(previous_event["endDate"]).year
-                    != previous_suffix
+                    previous_start_date.year != previous_suffix
+                    or previous_end_date.year != previous_suffix
                 ) and previous_prefix == series["name"]:
-                    event.name = f"{series['name']} {previous_suffix + 1}"
+                    suffix = previous_suffix + 1
+                    event.name = f"{series['name']} {suffix}"
+                    event.id = f"{event.series_id}-{suffix}"
+
+            if previous_event["id"] == event.id:
+                continue
 
         logging.info(f"Adding event {event.id} to {event.series_id}")
         series["events"].insert(i, event.materialize_entry(gmaps))
