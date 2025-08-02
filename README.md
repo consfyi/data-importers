@@ -12,7 +12,7 @@ This importer **cannot** import the URL field, you must set them yourself.
 
 This imports cons that are managed by [ConCat](https://concat.app) from any ConCat registration endpoint.
 
-For all cons that support ConCat import, you can add an entry in `import_concat_all.sh`.
+For all cons that support ConCat import, you can add an entry in `import_concat_all.sh` and also add an entry in `fancons_ignore` to ignore it during FanCons.com import.
 
 This importer will infer the URL field from the registration (changes `https://reg.` to `https://`), so be careful if the heuristic is incorrect.
 
