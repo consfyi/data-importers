@@ -55,7 +55,11 @@ async def fetch_bytes(client: httpx.AsyncClient, url: str) -> bytes:
     return resp.content
 
 
-with open(os.path.join(os.path.dirname(__file__), "countries.json"), "rb") as f:
+with open(os.path.join(os.path.dirname(__file__), "fancons_ignore"), "r") as f:
+    IGNORE = {line.strip() for line in f}
+
+
+with open(os.path.join(os.path.dirname(__file__), "countries.json"), "r") as f:
     COUNTRIES = json.load(f)
 
 
@@ -240,6 +244,9 @@ async def main():
 
     gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
     async for event in fetch_events():
+        if event.series_id in IGNORE:
+            continue
+
         fn = f"{event.series_id}.json"
 
         if os.path.exists(fn):
