@@ -299,6 +299,7 @@ async def main():
         series["events"].insert(i, event.materialize_entry(gmaps))
         with open(fn, "w") as f:
             json.dump(series, f, ensure_ascii=False, indent=2)
+            f.write("\n")
 
 
 if __name__ == "__main__":
