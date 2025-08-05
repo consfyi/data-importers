@@ -18,6 +18,7 @@ import httpx
 import re
 import os
 import uuid
+import urllib.parse
 import whenever
 
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +28,7 @@ def main():
     gmaps = googlemaps.Client(key=os.environ["GOOGLE_MAPS_API_KEY"])
 
     _, fn, concat_url = sys.argv
+    parsed_url = urllib.parse.urlparse(concat_url)
 
     series_id, ext = os.path.splitext(fn)
 
@@ -43,6 +45,9 @@ def main():
     config = resp.json()
 
     for convention in config["conventions"]:
+        if not convention["domain"].endswith(parsed_url.netloc):
+            continue
+
         start_date = whenever.OffsetDateTime.parse_common_iso(
             convention["startAt"]
         ).date()
