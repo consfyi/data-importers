@@ -21,3 +21,4 @@ $import pawcon.json https://reg.pacanthro.org &
 $import anthroexpo.json https://reg.anthroexpo.net &
 $import woods-flock.json https://reg.woodsflock.com &
 $import furcationland.json https://reg.furcationland.org &
+$import bewhiskered.json https://reg.bewhiskeredcon.org &
