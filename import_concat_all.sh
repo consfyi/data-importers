@@ -20,3 +20,4 @@ $import biggest-little-fur-con.json https://reg.goblfc.org &
 $import pawcon.json https://reg.pacanthro.org &
 $import anthroexpo.json https://reg.anthroexpo.net &
 $import woods-flock.json https://reg.woodsflock.com &
+$import furcationland.json https://reg.furcationland.org &
