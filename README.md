@@ -25,3 +25,7 @@ This importer will just guess when the next instance of a con is from previous c
 This imports cons that are managed by [RegFox](https://regfox.com) from any RegFox endpoint.
 
 This is super limited and can only really import start and end dates. Venue will be inferred from the previous event, which may or may not be what you want.
+
+## `rams_importer.py`
+
+This imports only Midwest FurFest by scraping the landing page for dates and guessing everything else.
