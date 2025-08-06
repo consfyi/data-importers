@@ -20,6 +20,12 @@ This importer will infer the URL field from the registration (changes `https://r
 
 This importer will just guess when the next instance of a con is from previous cons.
 
+## `furdu_importer.py`
+
+This imports cons that are managed by whatever registration system FurDU uses. This includes FurDU, Aurawra, and FurcoNZ.
+
+This is super limited and can only really import start and end dates. Venue will be inferred from the previous event, which may or may not be what you want.
+
 ## `regfox_importer.py`
 
 This imports cons that are managed by [RegFox](https://regfox.com) from any RegFox endpoint.
