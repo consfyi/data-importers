@@ -30,7 +30,7 @@ def main():
     _, fn, concat_url = sys.argv
     parsed_url = urllib.parse.urlparse(concat_url)
 
-    series_id, ext = os.path.splitext(fn)
+    series_id, _ = os.path.splitext(fn)
 
     with open(fn) as f:
         series = json.load(f)
@@ -68,7 +68,18 @@ def main():
             if previous_event["id"] == id:
                 sources = previous_event.get("sources", [])
                 if sources != ["fancons.com"] and sources != ["guessed"]:
-                    continue
+                    if (
+                        whenever.Date.parse_common_iso(previous_event["startDate"]).year
+                        == start_date.year
+                        and whenever.Date.parse_common_iso(
+                            previous_event["endDate"]
+                        ).year
+                        == end_date.year
+                    ):
+                        previous_event["startDate"] = start_date.format_common_iso()
+                        previous_event["endDate"] = end_date.format_common_iso()
+                        continue
+
                 del events[i]
 
         venue = convention["venue"]
