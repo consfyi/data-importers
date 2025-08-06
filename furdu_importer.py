@@ -33,6 +33,7 @@ query listAllEvents($nextToken: String) {
       title_short
       date_event_start
       date_event_end
+      display_timezone
       url_key
     }
     nextToken
@@ -62,13 +63,16 @@ def list_all_events():
                 continue
             if item["date_event_start"] == 0 or item["date_event_end"] == 0:
                 continue
+            tz = item["display_timezone"]
+            if tz is None:
+                tz = "UTC"
             yield ImportedEvent(
                 title=item["title"],
                 start_date=whenever.Instant.from_timestamp(item["date_event_start"])
-                .to_tz("UTC")
+                .to_tz(tz)
                 .date(),
                 end_date=whenever.Instant.from_timestamp(item["date_event_end"])
-                .to_tz("UTC")
+                .to_tz(tz)
                 .date(),
             )
         next_token = body["nextToken"]
