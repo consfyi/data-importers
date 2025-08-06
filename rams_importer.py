@@ -71,7 +71,7 @@ def main():
     if " - " in dates:
         epoch, eschaton = dates.split(" - ", 1)
         epoch_month, epoch_day = epoch.split(" ", 1)
-        eschaton_month, eschaton_day = epoch.split(" ", 1)
+        eschaton_month, eschaton_day = eschaton.split(" ", 1)
     elif "-" in dates:
         month, rest = dates.split(" ", 1)
         epoch_month = eschaton_month = month
