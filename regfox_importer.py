@@ -62,24 +62,30 @@ def main():
     if i < len(series["events"]):
         previous_event = series["events"][i]
         if previous_event["id"] == id:
-            return
+            if (
+                whenever.Date.parse_common_iso(previous_event["startDate"]).year
+                == start_date.year
+                and whenever.Date.parse_common_iso(previous_event["endDate"]).year
+                == end_date.year
+            ):
+                previous_event["startDate"] = start_date.format_common_iso()
+                previous_event["endDate"] = end_date.format_common_iso()
+            previous_event = None
 
-    if previous_event is None:
-        return
-
-    event = {
-        "id": id,
-        "name": f"{series['name']} {start_date.year}",
-        "url": previous_event["url"],
-        "startDate": start_date.format_common_iso(),
-        "endDate": end_date.format_common_iso(),
-        "venue": previous_event["venue"],
-        "address": previous_event.get("address"),
-        "country": previous_event.get("country"),
-        "latLng": previous_event.get("latLng"),
-    }
-    logging.info(f"imported: {event}")
-    series["events"].insert(i, {k: v for k, v in event.items() if v is not None})
+    if previous_event is not None:
+        event = {
+            "id": id,
+            "name": f"{series['name']} {start_date.year}",
+            "url": previous_event["url"],
+            "startDate": start_date.format_common_iso(),
+            "endDate": end_date.format_common_iso(),
+            "venue": previous_event["venue"],
+            "address": previous_event.get("address"),
+            "country": previous_event.get("country"),
+            "latLng": previous_event.get("latLng"),
+        }
+        logging.info(f"imported: {event}")
+        series["events"].insert(i, {k: v for k, v in event.items() if v is not None})
 
     with open(fn, "w") as f:
         json.dump(series, f, indent=2, ensure_ascii=False)
