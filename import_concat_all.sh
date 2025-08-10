@@ -23,3 +23,4 @@ $import woods-flock.json https://reg.woodsflock.com &
 $import furcationland.json https://reg.furcationland.org &
 $import bewhiskered.json https://reg.bewhiskeredcon.org &
 $import carolina-furfare.json https://reg.carolinafurfare.org &
+$import indyfurcon.json https://reg.indyfurcon.com &
