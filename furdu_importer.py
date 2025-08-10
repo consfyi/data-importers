@@ -90,7 +90,10 @@ def main():
 
     for imported in list_all_events():
         for i, e in enumerate(events):
-            if whenever.Date.parse_common_iso(e["startDate"]) <= imported.start_date:
+            if (
+                whenever.Date.parse_common_iso(e["startDate"]).year
+                <= imported.start_date.year
+            ):
                 break
         else:
             i = len(events)

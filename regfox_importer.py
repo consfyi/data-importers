@@ -53,7 +53,7 @@ def main():
     id = f"{series_id}-{start_date.year}"
 
     for i, e in enumerate(series["events"]):
-        if whenever.Date.parse_common_iso(e["startDate"]) <= start_date:
+        if whenever.Date.parse_common_iso(e["startDate"]).year <= start_date.year:
             break
     else:
         i = len(series["events"])

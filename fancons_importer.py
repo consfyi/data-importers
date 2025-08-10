@@ -263,7 +263,7 @@ async def main():
 
         for i, e in enumerate(series["events"]):
             start_date = datetime.date.fromisoformat(e["startDate"])
-            if start_date <= event.start_date:
+            if start_date.year <= event.start_date.year:
                 break
         else:
             i = len(series["events"])

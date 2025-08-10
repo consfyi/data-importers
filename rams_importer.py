@@ -92,7 +92,7 @@ def main():
 
     events = series["events"]
     for i, e in enumerate(events):
-        if whenever.Date.parse_common_iso(e["startDate"]) <= epoch:
+        if whenever.Date.parse_common_iso(e["startDate"]).year <= epoch.year:
             break
     else:
         i = len(events)
