@@ -37,14 +37,14 @@ def guess_language_for_region(region_code: str) -> icu.Locale:
     return icu.Locale.createFromName(f"und_{region_code}").addLikelySubtags()
 
 
-def to_lower(s: str, langid: icu.Locale) -> str:
-    return icu.CaseMap.toLower(langid, unicodedata.normalize("NFKC", s))
-
-
 def slugify(s: str, langid: icu.Locale) -> str:
     return "-".join(
         regex.sub(
-            r"[^\p{L}\p{N}\s-]+", "", to_lower(s.replace("&", "and"), langid)
+            r"[^\p{L}\p{N}\s-]+",
+            "",
+            icu.CaseMap.toLower(
+                langid, unicodedata.normalize("NFKC", s.replace("&", "and"))
+            ),
         ).split()
     )
 
