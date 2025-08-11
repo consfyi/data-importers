@@ -130,10 +130,7 @@ class Event:
     canceled: bool
     sources: typing.List[str] | None
 
-    def geocode_lat_lng(self, gmaps: googlemaps.Client):
-        if self.lat_lng is not None:
-            return
-
+    def update_via_geocode(self, gmaps: googlemaps.Client):
         session_token = str(uuid.uuid4())
 
         predictions = gmaps.places_autocomplete(
@@ -143,10 +140,10 @@ class Event:
         if predictions:
             prediction, *_ = predictions
 
-            if self.address is None:
-                st = prediction["structured_formatting"]
-                if "secondary_text" in st:
-                    self.address = st["secondary_text"]
+            st = prediction["structured_formatting"]
+            self.venue = st["main_text"]
+            if "secondary_text" in st:
+                self.address = st["secondary_text"]
 
             place = gmaps.place(
                 prediction["place_id"],
@@ -160,7 +157,7 @@ class Event:
                 self.lat_lng = eviltransform.gcj2wgs(lat, lng)
 
     def materialize_entry(self, gmaps: googlemaps.Client):
-        self.geocode_lat_lng(gmaps)
+        self.update_via_geocode(gmaps)
         return {
             "id": self.id,
             "name": self.name,
