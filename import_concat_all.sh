@@ -24,3 +24,5 @@ $import furcationland.json https://reg.furcationland.org &
 $import bewhiskered.json https://reg.bewhiskeredcon.org &
 $import carolina-furfare.json https://reg.carolinafurfare.org &
 $import indyfurcon.json https://reg.indyfurcon.com &
+$import its-ruff-out.json https://reg.ruffout.org &
+$import furski.json https://reg.fur.ski &
