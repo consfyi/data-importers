@@ -18,6 +18,7 @@ $import bewhiskered.json https://reg.bewhiskeredcon.org &
 $import biggest-little-fur-con.json https://reg.goblfc.org &
 $import carolina-furfare.json https://reg.carolinafurfare.org &
 $import furcationland.json https://reg.furcationland.org &
+$import furlingame.json https://reg.furlingame.com &
 $import furski.json https://reg.fur.ski &
 $import further-confusion.json https://reg.furtherconfusion.org &
 $import furvana.json https://reg.furvana.org &
