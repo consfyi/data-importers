@@ -53,7 +53,12 @@ def main():
         ).date()
         end_date = whenever.OffsetDateTime.parse_common_iso(convention["endAt"]).date()
 
-        id = f"{series_id}-{start_date.year}"
+        suffix = str(start_date.year)
+        _, _, name_suffix = convention["longName"].rpartition(" ")
+        if name_suffix.isdigit():
+            suffix = name_suffix
+
+        id = f"{series_id}-{suffix}"
 
         events = series["events"]
         for i, e in enumerate(events):
@@ -130,7 +135,7 @@ def main():
 
         event = {
             "id": id,
-            "name": f"{series['name']} {start_date.year}",
+            "name": f"{series['name']} {suffix}",
             "url": url,
             "startDate": start_date.format_common_iso(),
             "endDate": end_date.format_common_iso(),

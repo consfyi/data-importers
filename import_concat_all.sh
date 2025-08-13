@@ -25,5 +25,6 @@ $import indyfurcon.json https://reg.indyfurcon.com &
 $import its-ruff-out.json https://reg.ruffout.org &
 $import las-vegas-fur-con.json https://reg.lasvegasfurcon.org &
 $import megaplex.json https://reg.megaplexcon.org &
+$import palmetto-fur-the-season.json https://reg.palmettofurtheseason.org &
 $import pawcon.json https://reg.pacanthro.org &
 $import woods-flock.json https://reg.woodsflock.com &
