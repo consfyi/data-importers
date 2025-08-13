@@ -256,7 +256,7 @@ async def main():
                     series = json.load(f)
             else:
                 logging.info(f"Adding pending series {event.series_id}")
-                series = {"name": event.series_name, "url": event.url, "events": []}
+                series = {"name": event.series_name, "events": []}
 
         for i, e in enumerate(series["events"]):
             start_date = datetime.date.fromisoformat(e["startDate"])
