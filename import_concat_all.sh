@@ -1,6 +1,6 @@
 #!/bin/bash
 script_dir="$(dirname -- "${BASH_SOURCE[0]:-$0}")"
-import="$script_dir/concat_importer.py"
+import="$script_dir/import_concat.py"
 
 cleanup() {
     local exit_code=0
