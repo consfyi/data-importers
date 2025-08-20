@@ -69,30 +69,30 @@ def main():
 
     # https://github.com/MidwestFurryFandom/rams/blob/fc845002466b91fe443158eb4923901c14010b4f/uber/custom_tags.py#L131-L138
     if " - " in dates:
-        epoch, eschaton = dates.split(" - ", 1)
-        epoch_month, epoch_day = epoch.split(" ", 1)
-        eschaton_month, eschaton_day = eschaton.split(" ", 1)
+        start, end = dates.split(" - ", 1)
+        start_month, start_day = start.split(" ", 1)
+        end_month, end_day = end.split(" ", 1)
     elif "-" in dates:
         month, rest = dates.split(" ", 1)
-        epoch_month = eschaton_month = month
-        epoch_day, eschaton_day = rest.split("-")
+        start_month = end_month = month
+        start_day, end_day = rest.split("-")
     else:
         month, day = dates.split(" ", 1)
-        epoch_month = eschaton_month = month
-        epoch_day = eschaton_day = day
+        start_month = end_month = month
+        start_day = end_day = day
 
-    epoch_month = MONTHS.index(epoch_month)
-    epoch_day = int(epoch_day)
+    start_month = MONTHS.index(start_month)
+    start_day = int(start_day)
 
-    eschaton_month = MONTHS.index(eschaton_month)
-    eschaton_day = int(eschaton_day)
+    end_month = MONTHS.index(end_month)
+    end_day = int(end_day)
 
-    epoch = whenever.Date(year, epoch_month, epoch_day)
-    eschaton = whenever.Date(year, eschaton_month, eschaton_day)
+    start_date = whenever.Date(year, start_month, start_day)
+    end_date = whenever.Date(year, end_month, end_day)
 
     events = series["events"]
     for i, e in enumerate(events):
-        if whenever.Date.parse_common_iso(e["startDate"]).year <= epoch.year:
+        if whenever.Date.parse_common_iso(e["startDate"]).year <= start_date.year:
             break
     else:
         i = len(events)
@@ -103,8 +103,8 @@ def main():
             "id": id,
             "name": name,
             "url": "https://www.furfest.org",
-            "startDate": epoch.format_common_iso(),
-            "endDate": eschaton.format_common_iso(),
+            "startDate": start_date.format_common_iso(),
+            "endDate": end_date.format_common_iso(),
             **LOCATION,
         },
     )
