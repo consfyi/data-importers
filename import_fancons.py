@@ -226,7 +226,7 @@ async def fetch_events():
                     end_date=end_date,
                     venue=venue,
                     address=address,
-                    locale=f"{locale.getLanguage()}_{locale.getCountry()}",
+                    locale=f"{locale.getLanguage()}-{locale.getCountry()}",
                     lat_lng=lat_lng,
                     canceled=canceled,
                     sources=["fancons.com"],
