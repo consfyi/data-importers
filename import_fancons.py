@@ -132,7 +132,8 @@ class Event:
     end_date: datetime.date
     venue: str
     address: str | None
-    locale: str
+    locale: icu.Locale
+    translations: typing.Dict[str, typing.Dict[str, str]]
     lat_lng: tuple[float, float] | None
     canceled: bool
     sources: typing.List[str] | None
@@ -141,25 +142,53 @@ class Event:
         session_token = str(uuid.uuid4())
 
         predictions = gmaps.places_autocomplete(
-            ", ".join(part for part in [self.venue, self.address] if part is not None)
+            ", ".join(part for part in [self.venue, self.address] if part is not None),
+            session_token=session_token,
         )
 
         if predictions:
             prediction, *_ = predictions
 
-            st = prediction["structured_formatting"]
-            self.venue = st["main_text"]
-            if "secondary_text" in st:
-                self.address = st["secondary_text"]
-
             place = gmaps.place(
                 prediction["place_id"],
                 session_token=session_token,
-                fields=["geometry/location"],
-            )
-            l = place["result"]["geometry"]["location"]
+                fields=[
+                    "name",
+                    "formatted_address",
+                    "geometry/location",
+                    "address_component",
+                ],
+                language=str(self.locale),
+            )["result"]
+
+            self.venue = place["name"]
+            self.address = place["formatted_address"]
+
+            l = place["geometry"]["location"]
             self.lat_lng = (l["lat"], l["lng"])
-            if icu.Locale.createFromName(self.locale).getCountry() == "CN":
+            country = next(
+                component["short_name"]
+                for component in place["address_components"]
+                if "country" in component["types"]
+            )
+            self.locale = guess_language_for_region(country)
+
+            if self.locale.getLanguage() != "en":
+                enPlace = gmaps.place(
+                    prediction["place_id"],
+                    session_token=session_token,
+                    fields=[
+                        "name",
+                        "formatted_address",
+                    ],
+                    language="en",
+                )["result"]
+
+                enTranslations = self.translations.setdefault("en", {})
+                enTranslations["venue"] = enPlace["name"]
+                enTranslations["address"] = enPlace["formatted_address"]
+
+            if self.locale.getCountry() == "CN":
                 lat, lng = self.lat_lng
                 self.lat_lng = eviltransform.gcj2wgs(lat, lng)
 
@@ -173,7 +202,8 @@ class Event:
             "endDate": self.end_date.isoformat(),
             "venue": self.venue,
             **({"address": self.address} if self.address is not None else {}),
-            "locale": self.locale,
+            "locale": f"{self.locale.getLanguage()}-{self.locale.getCountry()}",
+            **({"translations": self.translations} if self.translations else {}),
             **({"latLng": self.lat_lng} if self.lat_lng is not None else {}),
             **({"canceled": True} if self.canceled else {}),
             **({"sources": self.sources} if self.sources is not None else {}),
@@ -234,6 +264,7 @@ async def fetch_events():
                     venue=venue,
                     address=address,
                     locale=f"{locale.getLanguage()}-{locale.getCountry()}",
+                    translations={},
                     lat_lng=lat_lng,
                     canceled=canceled,
                     sources=["fancons.com"],
