@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 LOCATION = {
     "venue": "Donald E. Stephens Convention Center",
     "address": "North River Road, Rosemont, IL, USA",
-    "country": "US",
+    "locale": "en_US",
     "latLng": [41.9792232, -87.861987],
 }
 

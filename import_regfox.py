@@ -81,7 +81,7 @@ def main():
             "endDate": end_date.format_common_iso(),
             "venue": previous_event["venue"],
             "address": previous_event.get("address"),
-            "country": previous_event.get("country"),
+            "locale": previous_event.get("locale"),
             "latLng": previous_event.get("latLng"),
         }
         logging.info(f"imported: {event}")

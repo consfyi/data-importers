@@ -122,7 +122,7 @@ def main():
             **{
                 k: v
                 for k, v in previous_event.items()
-                if k in {"venue", "address", "country", "latLng"}
+                if k in {"venue", "address", "locale", "latLng"}
             },
         }
         logging.info(f"imported: {event}")

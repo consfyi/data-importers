@@ -2,7 +2,6 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#   "eviltransform",
 #   "httpx",
 #   "googlemaps",
 #   "whenever",
@@ -12,7 +11,6 @@
 import sys
 import json
 import logging
-import eviltransform
 import googlemaps
 import httpx
 import re
@@ -115,9 +113,6 @@ def main():
                 )
                 l = place["result"]["geometry"]["location"]
                 lat_lng = [l["lat"], l["lng"]]
-                if country == "CN":
-                    lat, lng = lat_lng
-                    lat_lng = eviltransform.gcj2wgs(lat, lng)
 
             venue_details[venue] = {
                 "address": address,
@@ -141,7 +136,7 @@ def main():
             "endDate": end_date.format_common_iso(),
             "venue": venue,
             "address": address,
-            "country": country,
+            "locale": f"en_{country}",  # Probably don't hardcode this...
             "latLng": lat_lng,
         }
         logging.info(f"imported: {event}")

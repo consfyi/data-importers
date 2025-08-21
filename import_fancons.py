@@ -125,7 +125,7 @@ class Event:
     end_date: datetime.date
     venue: str
     address: str | None
-    country: str | None
+    locale: str
     lat_lng: tuple[float, float] | None
     canceled: bool
     sources: typing.List[str] | None
@@ -152,7 +152,7 @@ class Event:
             )
             l = place["result"]["geometry"]["location"]
             self.lat_lng = (l["lat"], l["lng"])
-            if self.country == "CN":
+            if icu.Locale.createFromName(self.locale).getCountry() == "CN":
                 lat, lng = self.lat_lng
                 self.lat_lng = eviltransform.gcj2wgs(lat, lng)
 
@@ -166,7 +166,7 @@ class Event:
             "endDate": self.end_date.isoformat(),
             "venue": self.venue,
             **({"address": self.address} if self.address is not None else {}),
-            **({"country": self.country} if self.country is not None else {}),
+            "locale": self.locale,
             **({"latLng": self.lat_lng} if self.lat_lng is not None else {}),
             **({"canceled": True} if self.canceled else {}),
             **({"sources": self.sources} if self.sources is not None else {}),
@@ -208,8 +208,8 @@ async def fetch_events():
                     "https://schema.org/EventRescheduled",
                 }
 
-                lang = guess_language_for_region(country)
-                series_id = slugify(prefix, lang)
+                locale = guess_language_for_region(country)
+                series_id = slugify(prefix, locale)
 
                 match = regex.search(r"/event/(\d+)/", url)
                 assert match is not None
@@ -226,7 +226,7 @@ async def fetch_events():
                     end_date=end_date,
                     venue=venue,
                     address=address,
-                    country=country,
+                    locale=f"{locale.getLanguage()}_{locale.getCountry()}",
                     lat_lng=lat_lng,
                     canceled=canceled,
                     sources=["fancons.com"],
@@ -269,6 +269,7 @@ async def main():
             previous_event = series["events"][i]
 
             event.url = previous_event["url"]
+            event.locale = previous_event["locale"]
 
             # Handle numbered cons.
             previous_prefix, previous_suffix = previous_event["name"].rsplit(" ", 1)
