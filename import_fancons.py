@@ -38,12 +38,19 @@ def guess_language_for_region(region_code: str) -> icu.Locale:
 
 
 def slugify(s: str, langid: icu.Locale) -> str:
+    try:
+        trans = icu.Transliterator.createInstance(f"{langid.getLanguage()}-ASCII")
+    except:
+        trans = icu.Transliterator.createInstance("ASCII")
+
     return "-".join(
         regex.sub(
-            r"[^\p{L}\p{N}\s-]+",
+            r"[^a-z0-9\s-]+",
             "",
-            icu.CaseMap.toLower(
-                langid, unicodedata.normalize("NFKC", s.replace("&", "and"))
+            trans.transliterate(
+                icu.CaseMap.toLower(
+                    langid, unicodedata.normalize("NFKC", s.replace("&", "and"))
+                )
             ),
         ).split()
     )
@@ -272,7 +279,9 @@ async def main():
             event.locale = previous_event["locale"]
 
             # Handle numbered cons.
-            previous_prefix, previous_suffix = previous_event["name"].rsplit(" ", 1)
+            previous_prefix, maybe_space, previous_suffix = regex.match(
+                r"^(.*?)( ?)(\d+)$", previous_event["name"]
+            ).groups()
             previous_start_date = datetime.date.fromisoformat(
                 previous_event["startDate"]
             )
@@ -294,7 +303,7 @@ async def main():
                     or previous_end_date.year != previous_suffix
                 ) and previous_prefix == series["name"]:
                     suffix = previous_suffix + 1
-                    event.name = f"{series['name']} {suffix}"
+                    event.name = f"{series['name']}{maybe_space}{suffix}"
                     event.id = f"{event.series_id}-{suffix}"
 
             if previous_event["id"] == event.id:
