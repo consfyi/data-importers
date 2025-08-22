@@ -173,7 +173,11 @@ class Event:
             )
             self.locale = guess_language_for_region(country)
 
-            if self.locale.getLanguage() != "en":
+            if self.locale.getCountry() == "CN":
+                lat, lng = self.lat_lng
+                self.lat_lng = eviltransform.gcj2wgs(lat, lng)
+
+            if self.locale.getScript() != "Latn":
                 enPlace = gmaps.place(
                     prediction["place_id"],
                     session_token=session_token,
@@ -187,10 +191,6 @@ class Event:
                 enTranslations = self.translations.setdefault("en", {})
                 enTranslations["venue"] = enPlace["name"]
                 enTranslations["address"] = enPlace["formatted_address"]
-
-            if self.locale.getCountry() == "CN":
-                lat, lng = self.lat_lng
-                self.lat_lng = eviltransform.gcj2wgs(lat, lng)
 
     def materialize_entry(self, gmaps: googlemaps.Client):
         self.update_via_geocode(gmaps)
