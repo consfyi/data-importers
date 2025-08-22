@@ -102,15 +102,13 @@ def main():
 
             if predictions:
                 prediction, *_ = predictions
-                st = prediction["structured_formatting"]
-                if "secondary_text" in st:
-                    address = st["secondary_text"]
 
                 place = gmaps.place(
                     prediction["place_id"],
                     session_token=session_token,
-                    fields=["geometry/location"],
+                    fields=["geometry/location", "name", "formatted_address"],
                 )
+                address = place["formatted_address"]
                 l = place["result"]["geometry"]["location"]
                 lat_lng = [l["lat"], l["lng"]]
 
