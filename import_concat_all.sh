@@ -12,12 +12,13 @@ cleanup() {
 
 trap cleanup EXIT
 
-$import aquatifur.json https://reg.aquatifur.org &
 $import anthrocon.json https://reg.anthrocon.org &
 $import anthroexpo.json https://reg.anthroexpo.net &
+$import aquatifur.json https://reg.aquatifur.org &
 $import bewhiskered.json https://reg.bewhiskeredcon.org &
 $import biggest-little-fur-con.json https://reg.goblfc.org &
 $import carolina-furfare.json https://reg.carolinafurfare.org &
+$import denfur.json https://reg.denfur.org &
 $import furcationland.json https://reg.furcationland.org &
 $import furlingame.json https://reg.furlingame.com &
 $import furski.json https://reg.fur.ski &
