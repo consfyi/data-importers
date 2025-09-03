@@ -134,7 +134,7 @@ def main():
             "endDate": end_date.format_common_iso(),
             "venue": venue,
             "address": address,
-            "locale": f"en_{country}",  # Probably don't hardcode this...
+            "locale": f"en-{country}",  # Probably don't hardcode this...
             "latLng": lat_lng,
         }
         logging.info(f"imported: {event}")
