@@ -12,6 +12,7 @@ cleanup() {
 
 trap cleanup EXIT
 
+$import aquatifur.json https://reg.aquatifur.org &
 $import anthrocon.json https://reg.anthrocon.org &
 $import anthroexpo.json https://reg.anthroexpo.net &
 $import bewhiskered.json https://reg.bewhiskeredcon.org &

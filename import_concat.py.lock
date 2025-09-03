@@ -4,7 +4,6 @@ requires-python = ">=3.13"
 
 [manifest]
 requirements = [
-    { name = "eviltransform" },
     { name = "googlemaps" },
     { name = "httpx" },
     { name = "whenever" },
@@ -53,12 +52,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e9/b0/0200da600134e001d91851ddc797809e2fe0ea72de90e09bec5a2fbdaccb/charset_normalizer-3.4.2-cp313-cp313-win_amd64.whl", hash = "sha256:aa6af9e7d59f9c12b33ae4e9450619cf2488e2bbe9b44030905877f0b2324980", size = 105641, upload-time = "2025-05-02T08:33:18.753Z" },
     { url = "https://files.pythonhosted.org/packages/20/94/c5790835a017658cbfabd07f3bfb549140c3ac458cfc196323996b10095a/charset_normalizer-3.4.2-py3-none-any.whl", hash = "sha256:7f56930ab0abd1c45cd15be65cc741c28b1c9a34876ce8c17a2fa107810c0af0", size = 52626, upload-time = "2025-05-02T08:34:40.053Z" },
 ]
-
-[[package]]
-name = "eviltransform"
-version = "0.1.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e7/a2/d48e4513355c92a3207ff2a855d5eb840b15d9e8d93e7ead0f27be1df104/eviltransform-0.1.1.tar.gz", hash = "sha256:e49c287a7ce5f5d9244e9420627fe33d020666d632ad4aee0f5ab530f70e1306", size = 1758, upload-time = "2018-01-02T11:16:58.91Z" }
 
 [[package]]
 name = "googlemaps"

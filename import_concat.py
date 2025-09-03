@@ -107,9 +107,9 @@ def main():
                     prediction["place_id"],
                     session_token=session_token,
                     fields=["geometry/location", "name", "formatted_address"],
-                )
+                )["result"]
                 address = place["formatted_address"]
-                l = place["result"]["geometry"]["location"]
+                l = place["geometry"]["location"]
                 lat_lng = [l["lat"], l["lng"]]
 
             venue_details[venue] = {
