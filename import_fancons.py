@@ -133,6 +133,7 @@ class Event:
     venue: str
     address: str | None
     locale: icu.Locale
+    age_restriction: int | None
     translations: typing.Dict[str, typing.Dict[str, str]]
     lat_lng: tuple[float, float] | None
     canceled: bool
@@ -204,6 +205,11 @@ class Event:
             **({"address": self.address} if self.address is not None else {}),
             "locale": f"{self.locale.getLanguage()}-{self.locale.getCountry()}",
             **({"translations": self.translations} if self.translations else {}),
+            **(
+                {"ageRestriction": self.age_restriction}
+                if self.age_restriction is not None
+                else {}
+            ),
             **({"latLng": self.lat_lng} if self.lat_lng is not None else {}),
             **({"canceled": True} if self.canceled else {}),
             **({"sources": self.sources} if self.sources is not None else {}),
@@ -264,6 +270,7 @@ async def fetch_events():
                     venue=venue,
                     address=address,
                     locale=f"{locale.getLanguage()}-{locale.getCountry()}",
+                    age_restriction=None,
                     translations={},
                     lat_lng=lat_lng,
                     canceled=canceled,
@@ -308,6 +315,7 @@ async def main():
 
             event.url = previous_event["url"]
             event.locale = previous_event["locale"]
+            event.age_restriction = previous_event.get("ageRestriction")
 
             # Handle numbered cons.
             previous_prefix, maybe_space, previous_suffix = regex.match(

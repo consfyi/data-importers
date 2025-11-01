@@ -24,6 +24,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     gmaps = googlemaps.Client(key=os.environ["GOOGLE_MAPS_API_KEY"])
+    today = whenever.Instant.now().to_system_tz().date()
 
     _, fn, concat_url = sys.argv
     parsed_url = urllib.parse.urlparse(concat_url)
@@ -79,8 +80,9 @@ def main():
                         ).year
                         == end_date.year
                     ):
-                        previous_event["startDate"] = start_date.format_common_iso()
-                        previous_event["endDate"] = end_date.format_common_iso()
+                        if start_date > today and end_date > today:
+                            previous_event["startDate"] = start_date.format_common_iso()
+                            previous_event["endDate"] = end_date.format_common_iso()
                         continue
 
                 del events[i]
@@ -121,8 +123,11 @@ def main():
         address = details["address"]
         lat_lng = details["latLng"]
 
+        age_restriction = None
+
         if previous_event is not None:
             url = previous_event["url"]
+            age_restriction = previous_event.get("ageRestriction")
         else:
             url = re.sub(r"^https://reg.", "https://", concat_url)
 
@@ -135,6 +140,11 @@ def main():
             "venue": venue,
             "address": address,
             "locale": f"en-{country}",  # Probably don't hardcode this...
+            **(
+                {"ageRestriction": age_restriction}
+                if age_restriction is not None
+                else {}
+            ),
             "latLng": lat_lng,
         }
         logging.info(f"imported: {event}")
