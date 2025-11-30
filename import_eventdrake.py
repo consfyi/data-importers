@@ -29,11 +29,13 @@ GQL_QUERY = """
 query listAllEvents($nextToken: String) {
   listAllEvents(nextToken: $nextToken) {
     items {
+      id
+      visible
+      enabled
       title
       title_short
       date_event_start
       date_event_end
-      display_timezone
       url_key
     }
     nextToken
@@ -41,31 +43,50 @@ query listAllEvents($nextToken: String) {
 }
 """
 
-_, fn, endpoint, api_key, prefix = sys.argv
+_, fn, endpoint, prefix = sys.argv
+
+
+def get_config():
+    resp = httpx.get(f"{endpoint}/_config/system.json")
+    resp.raise_for_status()
+    return resp.json()
+
+
+CONFIG = get_config()
+
+
+def get_event_config(event_id):
+    resp = httpx.get(f"{endpoint}/_config/app/{event_id}.json")
+    resp.raise_for_status()
+    return resp.json()
 
 
 def list_all_events():
     next_token = None
     while True:
         resp = httpx.post(
-            f"{endpoint}/graphql",
+            CONFIG["graphql"]["endpoint"],
             json={
                 "operationName": "listAllEvents",
                 "variables": {"nextToken": next_token},
                 "query": GQL_QUERY,
             },
-            headers={"authorization": api_key},
+            headers={"authorization": CONFIG["graphql"]["api_key"]},
         )
         resp.raise_for_status()
-        body = resp.json()["data"]["listAllEvents"]
+        json = resp.json()
+        if "errors" in json:
+            raise Exception(json["errors"])
+        body = json["data"]["listAllEvents"]
         for item in body["items"]:
+            if not item["visible"] or not item["enabled"]:
+                continue
             if item["url_key"] == "default" or not item["url_key"].startswith(prefix):
                 continue
             if item["date_event_start"] == 0 or item["date_event_end"] == 0:
                 continue
-            tz = item["display_timezone"]
-            if tz is None:
-                tz = "UTC"
+            event_config = get_event_config(item["id"])
+            tz = event_config["core"]["locale"]["timezone"]
             yield ImportedEvent(
                 title=item["title"],
                 start_date=whenever.Instant.from_timestamp(item["date_event_start"])
