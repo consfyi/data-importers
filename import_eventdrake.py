@@ -52,26 +52,23 @@ def get_config():
     return resp.json()
 
 
-CONFIG = get_config()
-
-
 def get_event_config(event_id):
     resp = httpx.get(f"{endpoint}/_config/app/{event_id}.json")
     resp.raise_for_status()
     return resp.json()
 
 
-def list_all_events():
+def list_all_events(config):
     next_token = None
     while True:
         resp = httpx.post(
-            CONFIG["graphql"]["endpoint"],
+            config["graphql"]["endpoint"],
             json={
                 "operationName": "listAllEvents",
                 "variables": {"nextToken": next_token},
                 "query": GQL_QUERY,
             },
-            headers={"authorization": CONFIG["graphql"]["api_key"]},
+            headers={"authorization": config["graphql"]["api_key"]},
         )
         resp.raise_for_status()
         json = resp.json()
@@ -108,8 +105,9 @@ def main():
         series = json.load(f)
 
     events = series["events"]
+    config = get_config()
 
-    for imported in list_all_events():
+    for imported in list_all_events(config):
         for i, e in enumerate(events):
             if (
                 whenever.Date.parse_common_iso(e["startDate"]).year
