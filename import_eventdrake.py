@@ -46,18 +46,6 @@ query listAllEvents($nextToken: String) {
 _, fn, endpoint, prefix = sys.argv
 
 
-def get_config():
-    resp = httpx.get(f"{endpoint}/_config/system.json")
-    resp.raise_for_status()
-    return resp.json()
-
-
-def get_event_config(event_id):
-    resp = httpx.get(f"{endpoint}/_config/app/{event_id}.json")
-    resp.raise_for_status()
-    return resp.json()
-
-
 def list_all_events(config):
     next_token = None
     while True:
@@ -82,7 +70,11 @@ def list_all_events(config):
                 continue
             if item["date_event_start"] == 0 or item["date_event_end"] == 0:
                 continue
-            event_config = get_event_config(item["id"])
+            event_config = (
+                httpx.get(f"{endpoint}/_config/app/{item['id']}.json")
+                .raise_for_status()
+                .json()
+            )
             tz = event_config["core"]["locale"]["timezone"]
             yield ImportedEvent(
                 title=item["title"],
@@ -105,7 +97,7 @@ def main():
         series = json.load(f)
 
     events = series["events"]
-    config = get_config()
+    config = httpx.get(f"{endpoint}/_config/system.json").raise_for_status().json()
 
     for imported in list_all_events(config):
         for i, e in enumerate(events):
