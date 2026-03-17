@@ -2,21 +2,20 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#   "bs4",
 #   "eviltransform",
 #   "httpx",
+#   "icalendar",
 #   "googlemaps",
 #   "PyICU",
 #   "regex",
 # ]
 # ///
 import asyncio
-from bs4 import BeautifulSoup
 import dataclasses
 import datetime
 import eviltransform
-import html
 import httpx
+from icalendar import Calendar
 import googlemaps
 import uuid
 import json
@@ -28,7 +27,6 @@ import os
 import typing
 import unicodedata
 import xml.etree.ElementTree as ET
-
 
 logging.basicConfig(level=logging.INFO)
 
@@ -72,7 +70,7 @@ with open(os.path.join(os.path.dirname(__file__), "countries.json"), "r") as f:
 
 OUTPUT_DIR = pathlib.Path(os.environ.get("OUTPUT_DIR", "."))
 CALENDAR_URL = os.environ.get(
-    "CALENDAR_URL", "https://furrycons.com/calendar/calendar.php"
+    "CALENDAR_URL", "https://furrycons.com/calendar/furrycons.ics"
 )
 MAP_URL = os.environ.get(
     "MAP_URL", "https://furrycons.com/calendar/map/yc-maps/map-upcoming.xml"
@@ -98,25 +96,34 @@ async def fetch_map(
 async def fetch_calendar(
     client: httpx.AsyncClient, url: str
 ) -> list[dict[str, typing.Any]]:
-    events = []
-
     resp = await client.get(url)
     resp.raise_for_status()
 
-    for script in BeautifulSoup(resp.content, "html.parser").find_all(
-        "script", {"type": "application/ld+json"}
-    ):
-        entries = json.loads(html.unescape(script.string or "").replace("\n", " "))
-        if not isinstance(entries, list):
-            entries = [entries]
+    events = []
+    cal = Calendar.from_ical(resp.content)
+    for component in cal.walk():
+        if component.name != "VEVENT":
+            continue
 
-        for entry in entries:
-            if (
-                entry.get("@context") != "http://schema.org"
-                or entry.get("@type") != "Event"
-            ):
-                continue
-            events.append(entry)
+        dtstart = component.get("DTSTART").dt
+        dtend = component.get("DTEND").dt
+        if isinstance(dtstart, datetime.datetime):
+            dtstart = dtstart.date()
+        if isinstance(dtend, datetime.datetime):
+            dtend = dtend.date()
+        # ICS DTEND is exclusive for DATE values
+        dtend = dtend - datetime.timedelta(days=1)
+
+        events.append(
+            {
+                "name": str(component.get("SUMMARY", "")),
+                "url": str(component.get("URL", "")),
+                "startDate": dtstart,
+                "endDate": dtend,
+                "location": str(component.get("LOCATION", "")),
+                "status": str(component.get("STATUS", "CONFIRMED")).upper(),
+            }
+        )
 
     return events
 
@@ -227,29 +234,26 @@ async def fetch_events():
         for entry in calendar:
             try:
                 name = entry["name"]
-                prefix, year = entry["name"].rsplit(" ", 1)
+                prefix, year = name.rsplit(" ", 1)
 
                 url = entry["url"]
-                start_date = datetime.date.fromisoformat(entry["startDate"])
-                end_date = datetime.date.fromisoformat(entry["endDate"])
-                loc = entry["location"]
-                venue = loc["name"]
-                address_parts = loc["address"]
-                country_name = address_parts["addressCountry"]
-                country = COUNTRIES[country_name]
-                address = ", ".join(
-                    part
-                    for part in [
-                        address_parts.get("addressLocality", ""),
-                        address_parts.get("addressRegion", ""),
-                        country_name,
-                    ]
-                    if part
+                start_date = entry["startDate"]
+                end_date = entry["endDate"]
+
+                location_parts = [p.strip() for p in entry["location"].split(",")]
+                venue = location_parts[0] if location_parts else ""
+                address = (
+                    ", ".join(location_parts[1:]) if len(location_parts) > 1 else None
                 )
-                canceled = entry["eventStatus"] not in {
-                    "https://schema.org/EventScheduled",
-                    "https://schema.org/EventRescheduled",
-                }
+
+                # Determine country from last part of location
+                country_part = location_parts[-1] if len(location_parts) > 1 else ""
+                country = COUNTRIES.get(country_part)
+                if country is None:
+                    # 2-letter suffix is likely a US state abbreviation
+                    country = "US"
+
+                canceled = entry["status"] not in {"CONFIRMED", "TENTATIVE"}
 
                 locale = guess_language_for_region(country)
                 series_id = slugify(prefix, locale)
@@ -269,7 +273,7 @@ async def fetch_events():
                     end_date=end_date,
                     venue=venue,
                     address=address,
-                    locale=f"{locale.getLanguage()}-{locale.getCountry()}",
+                    locale=locale,
                     age_restriction=None,
                     translations={},
                     lat_lng=lat_lng,
@@ -314,7 +318,7 @@ async def main():
             previous_event = series["events"][i]
 
             event.url = previous_event["url"]
-            event.locale = previous_event["locale"]
+            event.locale = icu.Locale.createFromName(previous_event["locale"])
             event.age_restriction = previous_event.get("ageRestriction")
 
             # Handle numbered cons.
