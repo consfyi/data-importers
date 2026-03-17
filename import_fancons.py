@@ -69,6 +69,9 @@ with open(os.path.join(os.path.dirname(__file__), "fancons_ignore"), "r") as f:
 with open(os.path.join(os.path.dirname(__file__), "countries.json"), "r") as f:
     COUNTRIES = json.load(f)
 
+with open(os.path.join(os.path.dirname(__file__), "fancons_remapping.json"), "r") as f:
+    REMAPPING = json.load(f)
+
 
 OUTPUT_DIR = pathlib.Path(os.environ.get("OUTPUT_DIR", "."))
 CALENDAR_URL = os.environ.get(
@@ -237,6 +240,7 @@ async def fetch_events():
             try:
                 name = html.unescape(entry["name"])
                 prefix, year = name.rsplit(" ", 1)
+                prefix = REMAPPING.get(prefix, prefix)
 
                 url = entry["url"]
                 start_date = entry["startDate"]
@@ -271,7 +275,7 @@ async def fetch_events():
                     series_id=series_id,
                     series_name=prefix,
                     id=f"{series_id}-{year}",
-                    name=name,
+                    name=f"{prefix} {year}",
                     url=url,
                     start_date=start_date,
                     end_date=end_date,
