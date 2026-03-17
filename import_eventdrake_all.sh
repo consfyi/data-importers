@@ -12,8 +12,8 @@ cleanup() {
 
 trap cleanup EXIT
 
-$import furry-down-under.json https://furdu.com.au furdu &
+$import furry-down-under.json https://ed.furdu.com.au furdu &
 $import furconz-hotel.json https://furconz.org.nz hotel- &
 $import furconz-camp.json https://furconz.org.nz camp- &
 $import aurawra.json https://rego.aurawra.org '' &
-$import tails-of-terror.json https://furdu.com.au tot &
+$import tails-of-terror.json https://ed.furdu.com.au tot &
