@@ -47,7 +47,7 @@ def main():
     with open(fn, "r") as f:
         series = json.load(f)
 
-    resp = httpx.get("https://reg.furfest.org/landing/index")
+    resp = httpx.get("https://reg.furfest.org/landing/index", follow_redirects=True)
     resp.raise_for_status()
 
     soup = BeautifulSoup(resp.content, "html.parser")

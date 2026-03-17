@@ -39,7 +39,7 @@ def main():
         for event in series["events"]
     }
 
-    resp = httpx.get(f"{concat_url}/api/config")
+    resp = httpx.get(f"{concat_url}/api/config", follow_redirects=True)
     resp.raise_for_status()
     config = resp.json()
 

@@ -14,7 +14,6 @@ import json
 import os
 import sys
 
-
 logging.basicConfig(level=logging.INFO)
 
 
@@ -71,7 +70,9 @@ def list_all_events(config):
             if item["date_event_start"] == 0 or item["date_event_end"] == 0:
                 continue
             event_config = (
-                httpx.get(f"{endpoint}/_config/app/{item['id']}.json")
+                httpx.get(
+                    f"{endpoint}/_config/app/{item['id']}.json", follow_redirects=True
+                )
                 .raise_for_status()
                 .json()
             )
@@ -97,7 +98,11 @@ def main():
         series = json.load(f)
 
     events = series["events"]
-    config = httpx.get(f"{endpoint}/_config/system.json").raise_for_status().json()
+    config = (
+        httpx.get(f"{endpoint}/_config/system.json", follow_redirects=True)
+        .raise_for_status()
+        .json()
+    )
 
     for imported in list_all_events(config):
         for i, e in enumerate(events):

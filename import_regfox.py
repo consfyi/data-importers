@@ -29,7 +29,7 @@ def main():
     with open(fn) as f:
         series = json.load(f)
 
-    resp = httpx.get(regfox_url)
+    resp = httpx.get(regfox_url, follow_redirects=True)
     resp.raise_for_status()
 
     interpreter = dukpy.JSInterpreter()
