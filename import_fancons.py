@@ -29,6 +29,7 @@ import unicodedata
 import xml.etree.ElementTree as ET
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def guess_language_for_region(region_code: str) -> icu.Locale:
@@ -70,10 +71,10 @@ with open(os.path.join(os.path.dirname(__file__), "countries.json"), "r") as f:
 
 OUTPUT_DIR = pathlib.Path(os.environ.get("OUTPUT_DIR", "."))
 CALENDAR_URL = os.environ.get(
-    "CALENDAR_URL", "https://furrycons.com/calendar/furrycons.ics"
+    "FANCONS_CALENDAR_URL", "https://furrycons.com/calendar/furrycons.ics"
 )
 MAP_URL = os.environ.get(
-    "MAP_URL", "https://furrycons.com/calendar/map/yc-maps/map-upcoming.xml"
+    "FANCONS_MAP_URL", "https://furrycons.com/calendar/map/yc-maps/map-upcoming.xml"
 )
 GOOGLE_MAPS_API_KEY = os.environ["GOOGLE_MAPS_API_KEY"]
 

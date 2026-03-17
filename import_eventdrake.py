@@ -15,6 +15,7 @@ import os
 import sys
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 @dataclasses.dataclass

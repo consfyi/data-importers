@@ -18,6 +18,7 @@ import whenever
 fn = "midwest-furfest.json"
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 LOCATION = {
     "venue": "Donald E. Stephens Convention Center",
