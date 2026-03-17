@@ -14,6 +14,7 @@ import asyncio
 import dataclasses
 import datetime
 import eviltransform
+import html
 import httpx
 from icalendar import Calendar
 import googlemaps
@@ -234,14 +235,16 @@ async def fetch_events():
 
         for entry in calendar:
             try:
-                name = entry["name"]
+                name = html.unescape(entry["name"])
                 prefix, year = name.rsplit(" ", 1)
 
                 url = entry["url"]
                 start_date = entry["startDate"]
                 end_date = entry["endDate"]
 
-                location_parts = [p.strip() for p in entry["location"].split(",")]
+                location_parts = [
+                    p.strip() for p in html.unescape(entry["location"]).split(",")
+                ]
                 venue = location_parts[0] if location_parts else ""
                 address = (
                     ", ".join(location_parts[1:]) if len(location_parts) > 1 else None
