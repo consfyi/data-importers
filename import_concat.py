@@ -23,6 +23,33 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
+def fetch_config(concat_url):
+    """Fetch ConCat's /api/config.
+
+    If CONCAT_RATELIMIT_KEY is set, it is sent as an `x-ratelimit-key` header
+    so requests aren't blocked by Cloudflare bot protection on the runner IPs.
+    The key is scoped to the ConCat host: redirects are followed manually and
+    the header is dropped if a redirect ever leaves that host, so the key can
+    never leak to a third party. The key is a request header only -- it is
+    never logged or written to the imported data.
+    """
+    key = os.environ.get("CONCAT_RATELIMIT_KEY")
+    base_host = urllib.parse.urlparse(concat_url).netloc
+    url = f"{concat_url}/api/config"
+    with httpx.Client() as client:
+        resp = None
+        for _ in range(5):
+            headers = {}
+            if key and urllib.parse.urlparse(url).netloc == base_host:
+                headers["x-ratelimit-key"] = key
+            resp = client.get(url, headers=headers)
+            if resp.is_redirect and resp.next_request is not None:
+                url = str(resp.next_request.url)
+                continue
+            break
+        return resp
+
+
 def main():
     gmaps = googlemaps.Client(key=os.environ["GOOGLE_MAPS_API_KEY"])
     today = whenever.Instant.now().to_system_tz().date()
@@ -40,7 +67,7 @@ def main():
         for event in series["events"]
     }
 
-    resp = httpx.get(f"{concat_url}/api/config", follow_redirects=True)
+    resp = fetch_config(concat_url)
     resp.raise_for_status()
     config = resp.json()
 
