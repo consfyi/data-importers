@@ -1,0 +1,10 @@
+name = "consfyi-concat-proxy"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+# Hosts the proxy may fetch /api/config from. Add more as cons get blocked by
+# their own Cloudflare. The shared secret (PROXY_SECRET) is set separately:
+#   npx wrangler secret put PROXY_SECRET
+[vars]
+ALLOW_HOSTS = "reg.furlingame.com"
