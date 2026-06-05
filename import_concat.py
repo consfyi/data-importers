@@ -26,15 +26,36 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 def fetch_config(concat_url):
     """Fetch ConCat's /api/config.
 
-    If CONCAT_RATELIMIT_KEY is set, it is sent as an `x-ratelimit-key` header
-    so requests aren't blocked by Cloudflare bot protection on the runner IPs.
-    The key is scoped to the ConCat host: redirects are followed manually and
-    the header is dropped if a redirect ever leaves that host, so the key can
-    never leak to a third party. The key is a request header only -- it is
-    never logged or written to the imported data.
+    Hosts behind Cloudflare that block the runner's IP are handled two ways:
+
+    - CONCAT_RATELIMIT_KEY: sent as an `x-ratelimit-key` header (works for cons
+      on the shared ConCat platform). Scoped to the ConCat host -- redirects are
+      followed manually and the header is dropped if a redirect leaves that
+      host, so it can never leak to a third party.
+    - CONCAT_PROXY: for hosts listed in CONCAT_PROXY_HOSTS (e.g. cons on their
+      own Cloudflare zone, where the platform key doesn't apply), the
+      /api/config request is routed through a Cloudflare Worker whose egress IP
+      isn't blocked, authenticated with CONCAT_PROXY_SECRET.
+
+    Both are request-only -- never logged or written to the imported data.
     """
-    key = os.environ.get("CONCAT_RATELIMIT_KEY")
     base_host = urllib.parse.urlparse(concat_url).netloc
+
+    proxy = os.environ.get("CONCAT_PROXY")
+    proxy_hosts = {
+        h.strip()
+        for h in os.environ.get("CONCAT_PROXY_HOSTS", "").split(",")
+        if h.strip()
+    }
+    if proxy and base_host in proxy_hosts:
+        return httpx.get(
+            proxy,
+            params={"url": f"{concat_url}/api/config"},
+            headers={"x-proxy-secret": os.environ.get("CONCAT_PROXY_SECRET", "")},
+            timeout=30,
+        )
+
+    key = os.environ.get("CONCAT_RATELIMIT_KEY")
     url = f"{concat_url}/api/config"
     with httpx.Client() as client:
         resp = None
