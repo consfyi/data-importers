@@ -1,0 +1,32 @@
+# Unit tests for the importers. These run offline -- no ConCat endpoint, no
+# Google Maps key -- so they are safe to run on every PR.
+name: test
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # The suite runs in well under a second: a minute here means something hung.
+    timeout-minutes: 5
+    steps:
+      # No step here runs an authenticated git command, and the tests are the
+      # PR author's code: don't leave GITHUB_TOKEN sitting in .git/config.
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v7
+      # Every test_*.py, so a new test file doesn't silently never run.
+      # --locked because the tests pin whenever to the version the importer
+      # runs against; a drifted lock must fail here, not re-resolve silently.
+      - run: |
+          for test in test_*.py; do
+            echo "== $test"
+            uv run --locked --script "$test"
+          done
