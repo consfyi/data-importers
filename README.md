@@ -16,6 +16,17 @@ For all cons that support ConCat import, you can add an entry in `import_concat_
 
 This importer will infer the URL field from the registration (changes `https://reg.` to `https://`), so be careful if the heuristic is incorrect.
 
+ConCat publishes next-year conventions before their details are settled, so a convention is skipped rather than imported when either:
+
+* its venue is a placeholder (`Coming Soon`, `TBA`, `TBD`, ...), which would otherwise geocode to a confident but wrong location; or
+* the year in its `longName` disagrees with the year its `startAt`/`endAt` fall in, which means the dates are the previous edition's, copied.
+
+Both are logged as warnings, and the convention imports normally once the upstream data is real.
+
+## Tests
+
+`./test_import_concat.py` runs the importer unit tests offline (no ConCat endpoint, no Maps key). CI runs them on every PR.
+
 ## `import_furdu.py`
 
 This imports cons that are managed by whatever registration system FurDU uses. This includes FurDU, Aurawra, and FurcoNZ.
