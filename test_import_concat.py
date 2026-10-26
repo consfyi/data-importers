@@ -995,6 +995,7 @@ def test_the_old_conventions_list_still_imports():
         {"conventions": BEWHISKERED_CONVENTIONS, "organization": {"country": "US"}}
     )
 
+    assert conventions == BEWHISKERED_CONVENTIONS
     assert run(BEWHISKERED_SERIES, conventions) == BEWHISKERED_SERIES
 
 
@@ -1002,6 +1003,13 @@ def test_no_active_convention_imports_nothing():
     config = {**SINGLE_CONVENTION_CONFIG, "convention": None}
 
     assert import_concat.conventions_in(config) == []
+
+
+def test_an_empty_convention_is_passed_on_rather_than_dropped():
+    """Only null means "no active convention"; {} is malformed and must fail."""
+    config = {**SINGLE_CONVENTION_CONFIG, "convention": {}}
+
+    assert import_concat.conventions_in(config) == [{}]
 
 
 def test_an_unknown_config_shape_names_the_keys_it_got():

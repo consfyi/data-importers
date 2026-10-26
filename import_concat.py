@@ -334,7 +334,7 @@ def conventions_in(config):
     if "conventions" in config:
         return config["conventions"]
     if "convention" in config:
-        return [config["convention"]] if config["convention"] else []
+        return [] if config["convention"] is None else [config["convention"]]
     raise ValueError(
         f"/api/config has neither 'conventions' nor 'convention': {sorted(config)}"
     )
