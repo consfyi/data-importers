@@ -8,7 +8,7 @@
 #   "icalendar",
 #   "googlemaps",
 #   "PyICU==2.16.2",
-#   "regex",
+#   "regex==2025.7.34",
 # ]
 # ///
 
@@ -16,10 +16,11 @@
 
 Run with `./test_import_fancons.py`.
 
-PyICU is pinned to the version in import_fancons.py.lock. It ships only as an
-sdist, so this test is also the build check: when the runner image moves to
-an ICU release the pinned PyICU doesn't support, this fails on the PR instead
-of the hourly import failing on main.
+PyICU and regex are pinned to the versions in import_fancons.py.lock, since
+slugify runs through both. PyICU ships only as an sdist, so this test is also
+the build check: when the runner image moves to an ICU release the pinned
+PyICU doesn't support, this fails on the PR instead of the hourly import
+failing on main.
 """
 
 import os
