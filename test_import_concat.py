@@ -970,5 +970,44 @@ def test_default_url_drops_the_reg_subdomain():
     )
 
 
+# Trimmed from reg.anthrocon.org/api/config as served on 2026-10-26: since
+# 2026-08-18 ConCat returns only the active convention, under `convention`.
+SINGLE_CONVENTION_CONFIG = {
+    "activeConventionDomain": "reg.bewhiskeredcon.org",
+    "activeConventionId": 1,
+    "convention": convention("Bewhiskered 2027", "2027-04-01", "2027-04-04"),
+    "organization": {"country": "US"},
+}
+
+
+def test_the_single_convention_shape_is_imported():
+    """The regression: every source raised KeyError: 'conventions'."""
+    conventions = import_concat.conventions_in(SINGLE_CONVENTION_CONFIG)
+
+    result = run(BEWHISKERED_SERIES, conventions, geocode=stub_geocode)
+
+    assert result["events"][0]["id"] == "bewhiskered-2027"
+    assert result["events"][0]["startDate"] == "2027-04-01"
+
+
+def test_the_old_conventions_list_still_imports():
+    conventions = import_concat.conventions_in(
+        {"conventions": BEWHISKERED_CONVENTIONS, "organization": {"country": "US"}}
+    )
+
+    assert run(BEWHISKERED_SERIES, conventions) == BEWHISKERED_SERIES
+
+
+def test_no_active_convention_imports_nothing():
+    config = {**SINGLE_CONVENTION_CONFIG, "convention": None}
+
+    assert import_concat.conventions_in(config) == []
+
+
+def test_an_unknown_config_shape_names_the_keys_it_got():
+    with pytest.raises(ValueError, match=r"\['events', 'organization'\]"):
+        import_concat.conventions_in({"events": [], "organization": {}})
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q", *sys.argv[1:]]))

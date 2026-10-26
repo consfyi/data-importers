@@ -324,8 +324,24 @@ def apply_convention(
     events.insert(index, {k: v for k, v in event.items() if v is not None})
 
 
+def conventions_in(config):
+    """Return the convention entries in a ConCat /api/config response.
+
+    ConCat used to list every convention under `conventions`; since 2026-08-18
+    it returns only the active one under `convention` (null when there is
+    none). Accept both, and fail with the keys we did get if neither is there.
+    """
+    if "conventions" in config:
+        return config["conventions"]
+    if "convention" in config:
+        return [config["convention"]] if config["convention"] else []
+    raise ValueError(
+        f"/api/config has neither 'conventions' nor 'convention': {sorted(config)}"
+    )
+
+
 def main():
-    gmaps = googlemaps.Client(key=os.environ["GOOGLE_MAPS_API_KEY"])
+    gmaps =googlemaps.Client(key=os.environ["GOOGLE_MAPS_API_KEY"])
     today = whenever.Instant.now().to_system_tz().date()
 
     _, fn, concat_url = sys.argv
@@ -371,7 +387,7 @@ def main():
 
         return {"address": address, "latLng": lat_lng}
 
-    for convention in config["conventions"]:
+    for convention in conventions_in(config):
         if not convention["domain"].endswith(parsed_url.netloc):
             continue
 
