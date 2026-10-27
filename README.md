@@ -25,7 +25,7 @@ Both are logged as warnings, and the convention imports normally once the upstre
 
 If fetching `/api/config` times out, drops the connection, or returns a 5xx, the importer waits 30 seconds and tries once more. It never retries a 403 or 429, because retrying a block can make it permanent.
 
-`import_concat_all.sh` still exits 0 when sources fail, so the sources that worked are committed. To act on failures, set `CONCAT_FAILURES_FILE`: the script writes one line per failed source there, with its last error line, and leaves the file empty when every source imports.
+`import_concat_all.sh` still exits 0 when sources fail, so the sources that worked are committed. To act on failures, set `CONCAT_FAILURES_FILE`: the script writes one line per failed source there, with its last error line, and leaves the file empty when every source imports. If the file can't be written, the script exits 2 instead of hiding the failures.
 
 ## Tests
 

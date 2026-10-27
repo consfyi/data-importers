@@ -9,15 +9,19 @@
 # If CONCAT_FAILURES_FILE is set, each failed source is also written there as
 # one line, with the last line of its error output, so the caller can fail the
 # run after committing what did import. The file is emptied first and stays
-# empty when every source imports.
+# empty when every source imports. If the file can't be written, the script
+# exits 2, since an unwritten report would hide the failures.
 script_dir="$(dirname -- "${BASH_SOURCE[0]:-$0}")"
 import="${IMPORT_CONCAT:-$script_dir/import_concat.py}"
 
 logs="$(mktemp -d)"
 trap 'rm -rf "$logs"' EXIT
 
-if [[ -n "$CONCAT_FAILURES_FILE" ]]; then
-    : > "$CONCAT_FAILURES_FILE"
+# A report that can't be written would hide every failure, so stop before
+# importing anything.
+if [[ -n "$CONCAT_FAILURES_FILE" ]] && ! : > "$CONCAT_FAILURES_FILE"; then
+    echo "::error::import_concat: can't write CONCAT_FAILURES_FILE ($CONCAT_FAILURES_FILE)"
+    exit 2
 fi
 
 declare -A pids
@@ -67,8 +71,10 @@ if (( ${#failed[@]} )); then
     for f in "${failed[@]}"; do
         echo "::error::  - ${f}"
     done
-    if [[ -n "$CONCAT_FAILURES_FILE" ]]; then
-        printf '%s\n' "${failed[@]}" > "$CONCAT_FAILURES_FILE"
+    if [[ -n "$CONCAT_FAILURES_FILE" ]] &&
+        ! printf '%s\n' "${failed[@]}" > "$CONCAT_FAILURES_FILE"; then
+        echo "::error::import_concat: can't write CONCAT_FAILURES_FILE ($CONCAT_FAILURES_FILE)"
+        exit 2
     fi
 fi
 
