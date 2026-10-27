@@ -19,6 +19,7 @@ API the importer never runs against.
 """
 
 import copy
+import json
 import sys
 
 import pytest
@@ -988,6 +989,41 @@ def test_the_single_convention_shape_is_imported():
 
     assert result["events"][0]["id"] == "bewhiskered-2027"
     assert result["events"][0]["startDate"] == "2027-04-01"
+
+
+def test_main_imports_the_single_convention_shape(monkeypatch, tmp_path):
+    """main() is where the KeyError was raised, so drive it end to end."""
+
+    class NoGeocoding:
+        def __init__(self, key):
+            pass
+
+        def places_autocomplete(self, *args, **kwargs):
+            raise AssertionError("geocoded unexpectedly")
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return copy.deepcopy(SINGLE_CONVENTION_CONFIG)
+
+    (tmp_path / "bewhiskered.json").write_text(json.dumps(BEWHISKERED_SERIES))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GOOGLE_MAPS_API_KEY", "unused")
+    monkeypatch.setattr(import_concat.googlemaps, "Client", NoGeocoding)
+    monkeypatch.setattr(import_concat, "fetch_config", lambda url: Response())
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["import_concat.py", "bewhiskered.json", "https://reg.bewhiskeredcon.org"],
+    )
+
+    import_concat.main()
+
+    events = json.loads((tmp_path / "bewhiskered.json").read_text())["events"]
+    assert events[0]["id"] == "bewhiskered-2027"
+    assert events[0]["startDate"] == "2027-04-01"
 
 
 def test_the_old_conventions_list_still_imports():
