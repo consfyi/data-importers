@@ -23,9 +23,13 @@ ConCat publishes next-year conventions before their details are settled, so a co
 
 Both are logged as warnings, and the convention imports normally once the upstream data is real.
 
+If fetching `/api/config` times out, drops the connection, or returns a 5xx, the importer waits 30 seconds and tries once more. It never retries a 403 or 429, because retrying a block can make it permanent.
+
+`import_concat_all.sh` still exits 0 when sources fail, so the sources that worked are committed. To act on failures, set `CONCAT_FAILURES_FILE`: the script writes one line per failed source there, with its last error line, and leaves the file empty when every source imports.
+
 ## Tests
 
-`./test_import_concat.py` runs the importer unit tests offline (no ConCat endpoint, no Maps key). CI runs them on every PR.
+`./test_import_concat.py` runs the importer unit tests offline (no ConCat endpoint, no Maps key). `./test_import_concat_all.py` tests the batch script's failure report against a stub importer; it needs bash 4 or later, so it skips on macOS's bundled bash. CI runs both on every PR.
 
 ## `import_furdu.py`
 
