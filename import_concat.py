@@ -15,6 +15,7 @@ import googlemaps
 import httpx
 import re
 import os
+import time
 import uuid
 import urllib.parse
 import whenever
@@ -70,6 +71,28 @@ def fetch_config(concat_url):
             break
         return resp
 
+
+RETRY_DELAY = 30  # seconds
+
+
+def fetch_config_with_retry(concat_url):
+    """Fetch /api/config, trying once more if the failure looks temporary.
+
+    A timeout, a dropped connection, or a 5xx gets one retry after RETRY_DELAY
+    seconds. Anything else is passed on unchanged, 403 and 429 in particular:
+    retrying a block can make it permanent.
+    """
+    try:
+        resp = fetch_config(concat_url)
+    except httpx.TransportError as e:
+        reason = type(e).__name__
+    else:
+        if resp.status_code < 500:
+            return resp
+        reason = f"HTTP {resp.status_code}"
+    logging.warning(f"{concat_url}: {reason}, retrying in {RETRY_DELAY}s")
+    time.sleep(RETRY_DELAY)
+    return fetch_config(concat_url)
 
 # Whole-string match only: a venue genuinely named "Coming Soon Hall" is a real
 # place, and matching it as a prefix would silently drop a valid convention.
@@ -357,7 +380,7 @@ def main():
         for event in series["events"]
     }
 
-    resp = fetch_config(concat_url)
+    resp = fetch_config_with_retry(concat_url)
     resp.raise_for_status()
     config = resp.json()
 

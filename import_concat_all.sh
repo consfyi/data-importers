@@ -5,14 +5,38 @@
 # from time to time. A single failing source must NOT prevent the sources
 # that succeeded from being committed, so we collect failures, report them
 # (as GitHub Actions annotations when available), and still exit 0.
+#
+# If CONCAT_FAILURES_FILE is set, each failed source is also written there as
+# one line, with the last line of its error output, so the caller can fail the
+# run after committing what did import. The file is emptied first and stays
+# empty when every source imports. If the file can't be written, the script
+# exits 2, since an unwritten report would hide the failures.
 script_dir="$(dirname -- "${BASH_SOURCE[0]:-$0}")"
-import="$script_dir/import_concat.py"
+import="${IMPORT_CONCAT:-$script_dir/import_concat.py}"
+
+if ! logs="$(mktemp -d)"; then
+    echo "::error::import_concat: can't create a temporary directory for the logs"
+    exit 2
+fi
+trap 'rm -rf "$logs"' EXIT
+
+# A report that can't be written would hide every failure, so stop before
+# importing anything.
+if [[ -n "$CONCAT_FAILURES_FILE" ]] && ! : > "$CONCAT_FAILURES_FILE"; then
+    echo "::error::import_concat: can't write CONCAT_FAILURES_FILE ($CONCAT_FAILURES_FILE)"
+    exit 2
+fi
 
 declare -A pids
+declare -A errlogs
 
+# Each source's stderr goes to its own file so its error can be reported
+# below; the files are printed once every source has finished.
 run() {
-    "$import" "$@" &
+    local errlog="$logs/${#pids[@]}.log"
+    "$import" "$@" 2> "$errlog" &
     pids[$!]="$*"
+    errlogs[$!]="$errlog"
 }
 
 run anthrocon.json https://reg.anthrocon.org
@@ -37,7 +61,12 @@ run woods-flock.json https://reg.woodsflock.com
 
 failed=()
 for pid in "${!pids[@]}"; do
-    wait "$pid" || failed+=("${pids[$pid]}")
+    if ! wait "$pid"; then
+        # One line, bounded: the error text can come from the upstream site.
+        reason="$(grep -v '^[[:space:]]*$' "${errlogs[$pid]}" | tail -n 1 | tr -d '\r' | cut -c1-300)"
+        failed+=("${pids[$pid]}: ${reason:-no error output}")
+    fi
+    cat "${errlogs[$pid]}" >&2
 done
 
 if (( ${#failed[@]} )); then
@@ -45,6 +74,11 @@ if (( ${#failed[@]} )); then
     for f in "${failed[@]}"; do
         echo "::error::  - ${f}"
     done
+    if [[ -n "$CONCAT_FAILURES_FILE" ]] &&
+        ! printf '%s\n' "${failed[@]}" > "$CONCAT_FAILURES_FILE"; then
+        echo "::error::import_concat: can't write CONCAT_FAILURES_FILE ($CONCAT_FAILURES_FILE)"
+        exit 2
+    fi
 fi
 
 # Exit 0 so successfully-imported sources are still committed even when some

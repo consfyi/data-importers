@@ -22,6 +22,7 @@ import copy
 import json
 import sys
 
+import httpx
 import pytest
 import whenever
 
@@ -1002,6 +1003,8 @@ def test_main_imports_the_single_convention_shape(monkeypatch, tmp_path):
             raise AssertionError("geocoded unexpectedly")
 
     class Response:
+        status_code = 200
+
         def raise_for_status(self):
             pass
 
@@ -1051,6 +1054,80 @@ def test_an_empty_convention_is_passed_on_rather_than_dropped():
 def test_an_unknown_config_shape_names_the_keys_it_got():
     with pytest.raises(ValueError, match=r"\['events', 'organization'\]"):
         import_concat.conventions_in({"events": [], "organization": {}})
+
+
+def fetch_sequence(monkeypatch, *outcomes):
+    """Make fetch_config return or raise each outcome in turn; log the calls."""
+    calls = []
+    remaining = list(outcomes)
+
+    def fetch(url):
+        calls.append(url)
+        outcome = remaining.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return httpx.Response(outcome, request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(import_concat, "fetch_config", fetch)
+    return calls
+
+
+@pytest.fixture
+def sleeps(monkeypatch):
+    """Record the retry pauses instead of waiting them out."""
+    recorded = []
+    monkeypatch.setattr(import_concat.time, "sleep", recorded.append)
+    return recorded
+
+
+@pytest.mark.parametrize(
+    "first",
+    [503, 502, httpx.ReadTimeout("timed out"), httpx.ConnectError("refused")],
+)
+def test_a_temporary_failure_is_retried_once_after_a_pause(monkeypatch, sleeps, first):
+    calls = fetch_sequence(monkeypatch, first, 200)
+
+    resp = import_concat.fetch_config_with_retry("https://reg.example")
+
+    assert resp.status_code == 200
+    assert len(calls) == 2
+    assert sleeps == [import_concat.RETRY_DELAY]
+
+
+@pytest.mark.parametrize("status", [403, 429, 404, 200])
+def test_a_block_or_a_real_answer_is_never_retried(monkeypatch, sleeps, status):
+    """Retrying a 403 or 429 can turn a temporary block into a permanent one."""
+    calls = fetch_sequence(monkeypatch, status)
+
+    resp = import_concat.fetch_config_with_retry("https://reg.example")
+
+    assert resp.status_code == status
+    assert len(calls) == 1
+    assert sleeps == []
+
+
+def test_a_second_temporary_failure_is_passed_on(monkeypatch, sleeps):
+    """One retry only: a site that's still down fails the source."""
+    calls = fetch_sequence(monkeypatch, 503, httpx.ReadTimeout("timed out"))
+
+    with pytest.raises(httpx.ReadTimeout):
+        import_concat.fetch_config_with_retry("https://reg.example")
+
+    assert len(calls) == 2
+
+
+def test_main_fails_the_source_when_the_retry_also_fails(monkeypatch, sleeps, tmp_path):
+    fetch_sequence(monkeypatch, 503, 503)
+    monkeypatch.setattr(import_concat.googlemaps, "Client", lambda key: None)
+    monkeypatch.setenv("GOOGLE_MAPS_API_KEY", "unused")
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "anthrocon.json").write_text(json.dumps({"events": []}))
+    monkeypatch.setattr(
+        sys, "argv", ["import_concat.py", "anthrocon.json", "https://reg.anthrocon.org"]
+    )
+
+    with pytest.raises(httpx.HTTPStatusError, match="503"):
+        import_concat.main()
 
 
 if __name__ == "__main__":
