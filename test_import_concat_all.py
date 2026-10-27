@@ -140,7 +140,11 @@ def test_a_report_that_becomes_unwritable_fails_the_script(run_all, tmp_path):
     """The final write is checked too, not only the one before importing."""
     report = tmp_path / "failures.txt"
     stub = tmp_path / "stub_import.sh"
-    stub.write_text(STUB.replace("exit 1 ;;", f'chmod 0444 "{report}"; exit 1 ;;'))
+    # A directory in the report's place fails the write even for root, which
+    # chmod alone wouldn't.
+    stub.write_text(
+        STUB.replace("exit 1 ;;", f'rm -f "{report}"; mkdir "{report}"; exit 1 ;;')
+    )
 
     result, _ = run_all(fail=["furski.json"], report=report)
 
