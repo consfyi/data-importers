@@ -19,6 +19,7 @@ API the importer never runs against.
 """
 
 import copy
+import json
 import sys
 
 import pytest
@@ -968,6 +969,88 @@ def test_default_url_drops_the_reg_subdomain():
     assert import_concat.derive_url("https://furrycon.example") == (
         "https://furrycon.example"
     )
+
+
+# Trimmed from reg.anthrocon.org/api/config as served on 2026-10-26: since
+# 2026-08-18 ConCat returns only the active convention, under `convention`.
+SINGLE_CONVENTION_CONFIG = {
+    "activeConventionDomain": "reg.bewhiskeredcon.org",
+    "activeConventionId": 1,
+    "convention": convention("Bewhiskered 2027", "2027-04-01", "2027-04-04"),
+    "organization": {"country": "US"},
+}
+
+
+def test_the_single_convention_shape_is_imported():
+    """The regression: every source raised KeyError: 'conventions'."""
+    conventions = import_concat.conventions_in(SINGLE_CONVENTION_CONFIG)
+
+    result = run(BEWHISKERED_SERIES, conventions, geocode=stub_geocode)
+
+    assert result["events"][0]["id"] == "bewhiskered-2027"
+    assert result["events"][0]["startDate"] == "2027-04-01"
+
+
+def test_main_imports_the_single_convention_shape(monkeypatch, tmp_path):
+    """main() is where the KeyError was raised, so drive it end to end."""
+
+    class NoGeocoding:
+        def __init__(self, key):
+            pass
+
+        def places_autocomplete(self, *args, **kwargs):
+            raise AssertionError("geocoded unexpectedly")
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return copy.deepcopy(SINGLE_CONVENTION_CONFIG)
+
+    (tmp_path / "bewhiskered.json").write_text(json.dumps(BEWHISKERED_SERIES))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GOOGLE_MAPS_API_KEY", "unused")
+    monkeypatch.setattr(import_concat.googlemaps, "Client", NoGeocoding)
+    monkeypatch.setattr(import_concat, "fetch_config", lambda url: Response())
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["import_concat.py", "bewhiskered.json", "https://reg.bewhiskeredcon.org"],
+    )
+
+    import_concat.main()
+
+    events = json.loads((tmp_path / "bewhiskered.json").read_text())["events"]
+    assert events[0]["id"] == "bewhiskered-2027"
+    assert events[0]["startDate"] == "2027-04-01"
+
+
+def test_the_old_conventions_list_still_imports():
+    conventions = import_concat.conventions_in(
+        {"conventions": BEWHISKERED_CONVENTIONS, "organization": {"country": "US"}}
+    )
+
+    assert conventions == BEWHISKERED_CONVENTIONS
+    assert run(BEWHISKERED_SERIES, conventions) == BEWHISKERED_SERIES
+
+
+def test_no_active_convention_imports_nothing():
+    config = {**SINGLE_CONVENTION_CONFIG, "convention": None}
+
+    assert import_concat.conventions_in(config) == []
+
+
+def test_an_empty_convention_is_passed_on_rather_than_dropped():
+    """Only null means "no active convention"; {} is malformed and must fail."""
+    config = {**SINGLE_CONVENTION_CONFIG, "convention": {}}
+
+    assert import_concat.conventions_in(config) == [{}]
+
+
+def test_an_unknown_config_shape_names_the_keys_it_got():
+    with pytest.raises(ValueError, match=r"\['events', 'organization'\]"):
+        import_concat.conventions_in({"events": [], "organization": {}})
 
 
 if __name__ == "__main__":
