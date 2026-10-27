@@ -14,7 +14,10 @@
 script_dir="$(dirname -- "${BASH_SOURCE[0]:-$0}")"
 import="${IMPORT_CONCAT:-$script_dir/import_concat.py}"
 
-logs="$(mktemp -d)"
+if ! logs="$(mktemp -d)"; then
+    echo "::error::import_concat: can't create a temporary directory for the logs"
+    exit 2
+fi
 trap 'rm -rf "$logs"' EXIT
 
 # A report that can't be written would hide every failure, so stop before

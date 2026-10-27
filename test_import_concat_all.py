@@ -58,12 +58,14 @@ def run_all(tmp_path):
         error="httpx.HTTPStatusError: Client error '403 Forbidden'",
         failures_file=True,
         report=None,
+        extra_env=None,
     ):
         env = {
             **os.environ,
             "IMPORT_CONCAT": str(stub),
             "STUB_FAIL": ",".join(fail),
             "STUB_ERROR": error,
+            **(extra_env or {}),
         }
         report = report or tmp_path / "failures.txt"
         if failures_file:
@@ -151,6 +153,14 @@ def test_a_report_that_becomes_unwritable_fails_the_script(run_all, tmp_path):
     assert result.returncode != 0
     assert "can't write CONCAT_FAILURES_FILE" in result.stdout
 
+
+
+def test_no_log_directory_fails_the_script(run_all, tmp_path):
+    """Without it every source's stderr redirect fails and its error is lost."""
+    result, _ = run_all(extra_env={"TMPDIR": str(tmp_path / "missing")})
+
+    assert result.returncode != 0
+    assert "can't create a temporary directory" in result.stdout
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q", *sys.argv[1:]]))
